@@ -1,268 +1,425 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Talleres de Matemáticas</title>
-    <script type="text/javascript" async
-    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
-    </script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Visor 360° — PROTECNICA Aeronáutica</title>
 
-    <style>
-        /* Estilo general */
-        body {
-            background: #000;
-            color: #0f0;
-            font-family: 'Courier New', Courier, monospace;
-            margin: 0;
-            padding: 0;
-            overflow-x: hidden;
-        }
+  <style>
+    :root{
+      --bg:#051833;
+      --bg2:#0b2a55;
+      --card:#0f203a;
+      --accent:#56a8ff;
+      --accent2:#8ac4ff;
+      --text:#e8f2ff;
+      --muted:#9bb3d1;
+      --glow:0 0 14px rgba(86,168,255,0.7);
+    }
 
-        h1, h2 {
-            text-align: center;
-            margin: 0;
-            padding: 20px 0;
-            animation: glitch 2s infinite;
-        }
+    body{
+      margin:0;
+      font-family:Inter,Segoe UI,Helvetica,Arial;
+      background:linear-gradient(180deg,var(--bg) 0%,var(--bg2) 100%);
+      color:var(--text);
+      display:flex;
+      flex-direction:column;
+      min-height:100vh;
+      overflow-x:hidden;
+    }
 
-        h1 {
-            font-size: 3em;
-            color: #0f0;
-            position: relative;
-            height: 550px;
-            background: url('https://th.bing.com/th/id/OIP.0e5oSX1RQRR6NarxfhK1YAHaEM?rs=1&pid=ImgDetMain') no-repeat center;
-            background-size: cover;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+    header{
+      padding:18px 20px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:26px;
+      font-weight:700;
+      letter-spacing:2px;
+      color:var(--accent2);
+      text-shadow:var(--glow);
+      position:relative;
+      animation:fadeDrop 1.5s ease;
+    }
 
-        .exercise-container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 20px;
-        }
+    /* Líneas animadas */
+    header::before,
+    header::after{
+      content:"";
+      position:absolute;
+      bottom:6px;
+      width:120px;
+      height:3px;
+      background:linear-gradient(90deg,transparent,var(--accent),transparent);
+      animation:lineGlow 2.5s infinite ease-in-out;
+    }
+    header::before{ left:18%; }
+    header::after{ right:18%; animation-delay:1.2s; }
 
-        .exercise {
-            margin: 40px 0;
-            padding: 20px;
-            border: 2px dashed #0f0;
-            border-radius: 10px;
-            background: rgba(0, 0, 0, 0.8);
-            overflow: hidden;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
+    /* LAYOUT */
+    main{
+      display:flex;
+      gap:22px;
+      padding:18px;
+      align-items:flex-start;
+      animation:fadeIn 1.2s ease;
+    }
 
-        .exercise:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 15px #0f0;
-        }
+    /* VIEWER */
+    .viewer{
+      background:rgba(0,0,0,0.55);
+      border-radius:14px;
+      overflow:hidden;
+      min-height:70vh;
+      flex:1;
+      box-shadow:0 0 18px rgba(0,0,0,0.4);
+      backdrop-filter:blur(6px);
+      animation:floatUp 1.2s ease;
+      position:relative;
+    }
 
-        .exercise h2 {
-            margin-bottom: 10px;
-            font-size: 1.5em;
-            animation: typing 1.5s steps(40, end), blink-caret 0.8s step-end infinite;
-        }
+    #stage{
+      width:100%;
+      height:75vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:#000;
+      touch-action:none;
+      position:relative;
+      cursor:grab;
+    }
+    #stage.grabbing{ cursor:grabbing!important; }
 
-        .exercise p {
-            font-size: 1.2em;
-            line-height: 1.8;
-            white-space: pre-wrap;
-        }
+    img.frame{
+      max-width:100%;
+      max-height:100%;
+      position:absolute;
+      user-select:none;
+      pointer-events:none;
+      transform-origin:center center;
+      transition:transform 0.12s ease-out;
+    }
 
-        @keyframes glitch {
-            0% {
-                text-shadow: 2px 0 red, -2px 0 blue;
-            }
-            50% {
-                text-shadow: -2px 0 red, 2px 0 blue;
-            }
-            100% {
-                text-shadow: 2px 0 red, -2px 0 blue;
-            }
-        }
+    #loader{
+      color:var(--accent2);
+      font-size:16px;
+      position:absolute;
+      animation:pulse 1.6s infinite ease-in-out;
+    }
 
-        @keyframes typing {
-            from { width: 0 }
-            to { width: 100% }
-        }
+    /* PLAY / STOP BUTTON */
+    .controls{
+      position:absolute;
+      bottom:10px;
+      left:50%;
+      transform:translateX(-50%);
+      display:flex;
+      gap:12px;
+      z-index:99;
+    }
 
-        @keyframes blink-caret {
-            from, to { border-color: transparent }
-            50% { border-color: #0f0; }
-        }
+    .btn{
+      background:var(--accent);
+      padding:8px 16px;
+      border:none;
+      border-radius:8px;
+      font-size:14px;
+      cursor:pointer;
+      color:#000;
+      font-weight:600;
+      transition:0.25s;
+      box-shadow:0 0 10px rgba(0,0,0,0.4);
+    }
+    .btn:hover{
+      background:var(--accent2);
+      transform:scale(1.06);
+    }
 
-        /* Animación del cursor: marca de lápiz */
-        #cursor-trail {
-            position: absolute;
-            top: 0;
-            left: 0;
-            pointer-events: none;
-            z-index: 9999;
-        }
+    /* SIDEBAR */
+    .sidebar{
+      width:380px;
+      background:var(--card);
+      padding:16px;
+      border-radius:12px;
+      box-shadow:0 0 14px rgba(0,0,0,0.4);
+      animation:floatRight 1.2s ease;
+    }
 
-        .cursor-mark {
-            position: absolute;
-            width: 10px; /* Tamaño de la marca */
-            height: 10px; /* Tamaño de la marca */
-            background: #0f0;
-            border-radius: 50%;
-            pointer-events: none;
-            transform: translate(-50%, -50%);
-            animation: fade-out 1s linear forwards, grow 0.2s ease-in forwards;
-        }
+    .titleBox{
+      background:rgba(255,255,255,0.06);
+      padding:12px;
+      border-radius:10px;
+      margin-bottom:12px;
+      border-left:4px solid var(--accent);
+      animation:fadeIn 1.5s ease;
+    }
 
-        @keyframes fade-out {
-            to {
-                opacity: 0;
-                transform: scale(3) translate(-50%, -50%);
-            }
-        }
+    .titleBox h2{
+      font-size:17px;
+      margin-bottom:6px;
+      color:var(--accent2);
+      text-shadow:0 0 8px rgba(86,168,255,0.6);
+    }
 
-        @keyframes grow {
-            from {
-                transform: scale(0);
-            }
-            to {
-                transform: scale(1);
-            }
-        }
-    
+    .titleBox p{
+      font-size:13px;
+      color:var(--muted);
+      line-height:1.4;
+    }
 
-    </style>
+    .context{
+      margin-top:18px;
+      padding:14px;
+      background:rgba(255,255,255,0.04);
+      border-radius:10px;
+      animation:fadeIn 1.4s ease;
+      border-left:3px solid #4aa3ff;
+    }
+
+    .context h3{
+      color:var(--accent2);
+      margin-bottom:8px;
+      font-size:16px;
+      text-shadow:var(--glow);
+    }
+
+    .context p{
+      font-size:14px;
+      line-height:1.5;
+      color:var(--muted);
+      margin-bottom:10px;
+    }
+
+    footer{
+      padding:12px;
+      text-align:center;
+      color:var(--muted);
+    }
+
+    /* ANIMATIONS */
+    @keyframes fadeDrop{from{opacity:0;transform:translateY(-20px);}to{opacity:1;transform:translateY(0);}}
+    @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+    @keyframes floatUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+    @keyframes floatRight{from{opacity:0;transform:translateX(40px);}to{opacity:1;transform:translateX(0);}}
+    @keyframes pulse{0%{opacity:0.3;}50%{opacity:1;}100%{opacity:0.3;}}
+    @keyframes lineGlow{0%,100%{opacity:0.2;}50%{opacity:1;}}
+
+    @media (max-width:900px){
+      main{flex-direction:column;}
+      .sidebar{width:100%;}
+    }
+  </style>
 </head>
+
 <body>
-    <header>
-        <h1>Taller de Matemáticas</h1>
-    </header>
-        <div class="exercise-container">
-            <!-- Ejercicios -->
-            <div class="container">
-                <div class="exercise">
-                    <h2>Ejercicio 1</h2>
-                    <p>
-                        \( y = (4x−1)^3 \)<br>
-                        \( y' = 3(4x−1)^2 \cdot 4 \)<br>
-                        \( y' = 12(4x−1)^2 \)
-                    </p>
-                </div>
-                <div class="exercise">
-                    <h2>Ejercicio 2</h2>
-                    <p>
-                        \( g(x) = 3(4−9x)^4 \)<br>
-                        \( g'(x) = 3 \cdot 4(4−9x)^3 \cdot (−9) \)<br>
-                        \( g'(x) = −108(4−9x)^3 \)
-                    </p>
-                </div>
-                <div class="exercise">
-                    <h2>Ejercicio 3</h2>
-                    <p>
-                        \( f(t) = (5−t)^{1/2} \)<br>
-                        \( f'(t) = \frac{1}{2}(5−t)^{−1/2} \cdot (−1) \)<br>
-                        \( f'(t) = −\frac{1}{2\sqrt{5 - t}} \)
-                </div>
-                <div class="exercise">
-                    <h2>Ejercicio 4</h2>
-                    <p>
-                        \( y = (6x^2+1)^{1/3} \)<br>
-                        \( y' = \frac{1}{3}(6x^2+1)^{−2/3} \cdot (12x) \)<br>
-                        \( y' = \frac{4x}{(6x^2+1)^{2/3}} \)
-                    </p>
-                </div>
-                <div class="exercise">
-                    <h2>Ejercicio 5</h2>
-                    <p>
-                        \( y = 2(9−x^2)^{1/4} \)<br>
-                        \( y' = 2 \cdot \frac{1}{4}(9−x^2)^{−3/4} \cdot (−2x) \)<br>
-                        \( y' = −\frac{x}{(9−x^2)^{3/4}} \)
-                    </p>
-                </div>
-                <div class="exercise">
-                    <h2>Ejercicio 6</h2>
-                    <p>
-                        \( y = \cos(4x) \)<br>
-                        \( y' = −\sin(4x) \cdot 4 \)<br>
-                        \( y' = −4\sin(4x) \)
-                    </p>
-                </div>
-                <div class="exercise">
-                    <h2>Ejercicio 7</h2>
-                    <p>
-                        \( g(x) = 5\tan(3x) \)<br>
-                        \( g'(x) = 5 \cdot \sec^2(3x) \cdot 3 \)<br>
-                        \( g'(x) = 15\sec^2(3x) \)
-                    </p>
-                </div>
-                <div class="exercise">
-                    <h2>Ejercicio 8</h2>
-                    <p>
-                        \( y = \sin^2(πx) \)<br>
-                        \( y' = 2\sin(πx)\cos(πx) \cdot π \)<br>
-                        \( y' = 2π\sin(πx)\cos(πx) \)
-                    </p>
-                </div>
-                <div class="exercise">
-                    <h2>Ejercicio 9</h2>
-                    <p>
-                        \( y = 2(6−x^2)^5 \)<br>
-                        \( y' = 2 \cdot 5(6−x^2)^4 \cdot (−2x) \)<br>
-                        \( y' = −20x(6−x^2)^4 \)
-                    </p>
-                </div>
-                <div class="exercise">
-                    <h2>Ejercicio 10</h2>
-                    <p>
-                        \( f(t) = (9t+2)^{2/3} \)<br>
-                        \( f'(t) = \frac{2}{3}(9t+2)^{−1/3} \cdot 9 \)<br>
-                        \( f'(t) = 6(9t+2)^{−1/3} \)
-                    </p>
-                </div>
-                <div class="exercise">
-                    <h2>Ejercicio 11</h2>
-                    <p>
-                        \( g(x) = (9−4x)^{1/2} \)<br>
-                        \( g'(x) = \frac{1}{2}(9−4x)^{−1/2} \cdot (−4) \)<br>
-                        \( g'(x) = −2(9−4x)^{−1/2} \)
-                    </p>
-                </div>
-                <div class="exercise">
-                    <h2>Ejercicio 12</h2>
-                    <p>
-                        \( g(x) = (x^2−2x+1)^{1/2} \)<br>
-                        \( g(x) = x−1 \)<br>
-                        \( g'(x) = 1 \)
-                    </p>
-                </div>
-                <div class="exercise">
-                    <h2>Ejercicio 13</h2>
-                    <p>
-                        \( f(x) = −3(4−2x)^{1/2} \)<br>
-                        \( f'(x) = −3 \cdot \frac{1}{2}(4−2x)^{−1/2} \cdot (−2) \)<br>
-                        \( f'(x) = 3(4−2x)^{−1/2} \)
-                    </p>
-                </div>
-                <div class="exercise">
-                    <h2>Ejercicio 14</h2>
-                    <p>
-                        \( y = \sin(πx) \)<br>
-                        \( y' = \cos(πx) \cdot π \)<br>
-                        \( y' = π\cos(πx) \)
-                    </p>
-                </div>
-            </div>
-    <div id="cursor-trail"></div>
-    <script>
-        // Cursor trail animation: crear marcas de "lápiz"
-        const cursorTrail = document.getElementById('cursor-trail');
-        document.addEventListener('mousemove', (e) => {
-            const mark = document.createElement('div');
-            mark.className = 'cursor-mark';
-            mark.style.left = `${e.pageX}px`;
-            mark.style.top = `${e.pageY}px`;
-            cursorTrail.appendChild(mark);
-            setTimeout(() => mark.remove(), 1000); // Elimina la marca después de 1 segundo
-        });
-    </script>
+
+<header>PROTECNICA — Centro de Entrenamiento Aeronáutico</header>
+
+<main>
+
+  <!-- VIEWER -->
+  <section class="viewer">
+    <div id="stage">
+      <div id="loader">Cargando visor 360°...</div>
+      <img id="frame" class="frame" src="" alt="frame" style="display:none">
+    </div>
+
+    <div class="controls">
+      <button id="playBtn" class="btn">▶ Play</button>
+      <button id="stopBtn" class="btn">■ Stop</button>
+    </div>
+  </section>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+
+    <div class="titleBox">
+      <h2>Meteorología Aeronáutica — Curso 35A</h2>
+      <p><b>Docente:</b> Nelson Vásquez<br>
+         <b>Estudiante:</b> Lucía Quiroz</p>
+    </div>
+
+    <div class="context">
+      <h3>Tormenta en Cabina — Lecciones del Vuelo West Caribbean</h3>
+
+      <p>
+      La aviación no perdona la improvisación. Un avión es una máquina precisa,
+      pero también frágil ante la combinación de mal tiempo, hielo, turbulencia y
+      decisiones humanas tomadas con segundos de diferencia.
+      </p>
+
+      <p>
+      El accidente del vuelo West Caribbean revela una verdad dura:  
+      **el clima siempre avisa**, pero a veces no se interpreta a tiempo.
+      El engelamiento redujo la capacidad de ascenso, el aire cálido afectó el
+      rendimiento de los motores, y la tripulación quedó atrapada en un ascenso
+      que el avión ya no podía sostener.
+      </p>
+
+      <p>
+      Mientras los pilotos peleaban contra la pérdida de velocidad, el avión pedía
+      a gritos una sola cosa: energía. Más potencia, o menos altitud.  
+      Pero las decisiones tardaron… y el margen desapareció.
+      </p>
+
+      <p>
+      Este caso recuerda que **meteorología, factor humano y gestión del riesgo**
+      no son materias aisladas. Son un triángulo perfecto: cuando uno falla, los
+      otros deben compensarlo.
+      </p>
+
+      <p>
+      La cabina moderna ya no es un lugar donde se “vuela por instinto”.  
+      Es un espacio donde la ciencia atmosférica, el criterio humano y los sistemas
+      automáticos trabajan juntos para mantener el equilibrio.
+      </p>
+    </div>
+
+  </aside>
+</main>
+
+<footer>Visor 360° con zoom, inercia, controles automáticos y diseño aeronáutico</footer>
+
+<!-- SCRIPT -->
+<script>
+const frameEl = document.getElementById("frame");
+const loader = document.getElementById("loader");
+const status = document.getElementById("status");
+const stage = document.getElementById("stage");
+
+let frames = [];
+let current = 0;
+let totalFrames = 0;
+
+let dragging = false;
+let lastX = 0;
+let velocity = 0;
+let inertiaInterval = null;
+
+let playInterval = null;  // auto-rotate
+
+let zoom = 1;
+let minZoom = 0.6;
+let maxZoom = 2.6;
+
+const BASE_URL =
+"https://p.turbosquid.com/ts-thumb/LU/5HZXkA/q6/rusty_business_jet_wreckage_crashed_360/jpg/1756937156/1920x1080/turn_fit_q99/ac114110c85849d29b7dfc57e22885fad9f89458/rusty_business_jet_wreckage_crashed_360-1.jpg";
+
+function makeFrameUrl(base, index){
+  return base.replace(/-(\d+)\.jpg$/, (match, num)=>{
+    const digits = num.length;
+    return `-${String(index).padStart(digits,"0")}.jpg`;
+  });
+}
+
+function imageExists(url){
+  return new Promise(resolve=>{
+    const img = new Image();
+    img.onload = ()=>resolve(true);
+    img.onerror = ()=>resolve(false);
+    img.src = url;
+  });
+}
+
+async function detectFrameCount(base){
+  let index = 1, count = 0, exist = true;
+  while(exist && index < 900){
+    const test = makeFrameUrl(base,index);
+    exist = await imageExists(test);
+    if(exist) count++;
+    index++;
+  }
+  return count;
+}
+
+async function preload(){
+  totalFrames = await detectFrameCount(BASE_URL);
+  if(totalFrames === 0){
+    loader.textContent = "No se detectaron imágenes.";
+    return;
+  }
+
+  frames = new Array(totalFrames);
+  let loaded = 0;
+
+  for(let i=1;i<=totalFrames;i++){
+    const img = new Image();
+    img.src = makeFrameUrl(BASE_URL,i);
+    img.onload = ()=>{
+      frames[i-1] = img;
+      loaded++;
+      if(loaded === totalFrames){
+        loader.style.display = "none";
+        showFrame(0);
+      }
+    };
+  }
+}
+
+function showFrame(i){
+  current = (i + totalFrames) % totalFrames;
+  frameEl.src = frames[current].src;
+  frameEl.style.display = "block";
+  frameEl.style.transform = `scale(${zoom})`;
+}
+
+stage.addEventListener("pointerdown", e=>{
+  dragging = true;
+  stage.classList.add("grabbing");
+  lastX = e.clientX;
+  velocity = 0;
+  if(inertiaInterval) clearInterval(inertiaInterval);
+});
+
+window.addEventListener("pointermove", e=>{
+  if(!dragging) return;
+  const dx = e.clientX - lastX;
+  lastX = e.clientX;
+  if(Math.abs(dx)>1){
+    const delta = Math.round(dx/6);
+    showFrame(current - delta);
+    velocity = delta;
+  }
+});
+
+window.addEventListener("pointerup", ()=>{
+  dragging = false;
+  stage.classList.remove("grabbing");
+  startInertia();
+});
+
+function startInertia(){
+  if(Math.abs(velocity) < 1) return;
+  inertiaInterval = setInterval(()=>{
+    velocity *= 0.93;
+    if(Math.abs(velocity)<0.1){
+      clearInterval(inertiaInterval);
+      return;
+    }
+    showFrame(current - velocity);
+  },16);
+}
+
+stage.addEventListener("wheel", e=>{
+  e.preventDefault();
+  zoom += e.deltaY * -0.0015;
+  zoom = Math.max(minZoom,Math.min(maxZoom,zoom));
+  frameEl.style.transform = `scale(${zoom})`;
+});
+
+/* AUTO ROTATE */
+document.getElementById("playBtn").addEventListener("click", ()=>{
+  if(playInterval) return;
+  playInterval = setInterval(()=> showFrame(current + 1), 60);
+});
+document.getElementById("stopBtn").addEventListener("click", ()=>{
+  clearInterval(playInterval);
+  playInterval = null;
+});
+
+window.addEventListener("load", preload);
+</script>
+
 </body>
 </html>
